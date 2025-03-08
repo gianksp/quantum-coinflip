@@ -35,7 +35,7 @@ jobs:
       # Build and Deploy Backend to Lambda via S3
       - name: Build and Deploy Lambda
         run: |
-        # Create a clean directory for the Lambda package
+          # Create a clean directory for the Lambda package
           mkdir -p lambda_package
           cp backend/lambda_function.py lambda_package/
           cd lambda_package
