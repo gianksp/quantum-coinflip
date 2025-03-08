@@ -1,0 +1,61 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <title>Quantum Coinflip</title>
+    <style>
+        body {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            margin: 0;
+            font-family: Arial, sans-serif;
+            background: #f0f0f0;
+        }
+        button {
+            padding: 15px 30px;
+            font-size: 18px;
+            background-color: #007bff;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+        }
+        button:disabled {
+            background-color: #ccc;
+            cursor: not-allowed;
+        }
+        #result {
+            margin-top: 20px;
+            font-size: 24px;
+        }
+    </style>
+</head>
+<body>
+    <h1>Hello World Quantum Coinflip</h1>
+    <button id="flipButton" onclick="flipCoin()">Flip Coin</button>
+    <div id="result"></div>
+
+    <script>
+        async function flipCoin() {
+            const button = document.getElementById('flipButton');
+            const resultDiv = document.getElementById('result');
+            button.disabled = true;
+            resultDiv.textContent = 'Flipping...';
+
+            try {
+                const response = await fetch('/flip', { method: 'POST' });
+                const data = await response.json();
+                resultDiv.textContent = `Result: ${data.result}`;
+            } catch (error) {
+                resultDiv.textContent = 'Error flipping coin!';
+                console.error(error);
+            } finally {
+                button.disabled = false;
+            }
+        }
+    </script>
+</body>
+</html>
