@@ -19,21 +19,25 @@ def index():
 def flip_coin():
     print("Flipping a quantum coin on real IBM hardware...")
     
+    # Create a minimal 1-qubit circuit
     circuit = QuantumCircuit(1, 1)
     circuit.h(0)
     circuit.measure(0, 0)
     
+    # Select the least busy real quantum backend
     backend = service.least_busy(operational=True, simulator=False, min_num_qubits=1)
     print(f"Using backend: {backend.name}")
     
-    transpiled_circuit = transpile(circuit, backend=backend)
+    # Transpile with optimization
+    transpiled_circuit = transpile(circuit, backend=backend, optimization_level=1)
     
+    # Run with Sampler and a 60-second timeout
     sampler = Sampler(mode=backend)
     job = sampler.run([transpiled_circuit], shots=1)
     try:
         result = job.result(timeout=60)
         counts = result[0].data.c.get_counts()
-        outcome = list(counts.keys())[0]
+        outcome = list(counts.keys())[0]  # '0' or '1'
         coin_result = "Tails" if outcome == '0' else "Heads"
     except Exception as e:
         print(f"Job timed out or failed: {str(e)}")
