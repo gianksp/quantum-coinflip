@@ -5,56 +5,146 @@
     <title>Quantum Coinflip</title>
     <style>
         body {
+            margin: 0;
+            height: 100vh;
             display: flex;
             flex-direction: column;
             align-items: center;
             justify-content: center;
-            height: 100vh;
-            margin: 0;
+            background: linear-gradient(135deg, #1e1e2f, #3b3b5b);
             font-family: Arial, sans-serif;
-            background: #f0f0f0;
+            color: #fff;
+            overflow: hidden;
+        }
+        h1 {
+            font-size: 2.5em;
+            text-shadow: 0 0 10px rgba(255, 255, 255, 0.5);
+            margin-bottom: 10px;
         }
         button {
             padding: 15px 30px;
             font-size: 18px;
-            background-color: #007bff;
-            color: white;
+            background: linear-gradient(45deg, #ff6b6b, #ff8e53);
             border: none;
-            border-radius: 5px;
+            border-radius: 25px;
+            color: white;
             cursor: pointer;
+            box-shadow: 0 5px 15px rgba(0, 0, 0, 0.3);
+            transition: transform 0.2s;
+        }
+        button:hover {
+            transform: translateY(-3px);
         }
         button:disabled {
-            background-color: #ccc;
+            opacity: 0.5;
             cursor: not-allowed;
         }
-        #result {
+        #status {
             margin-top: 20px;
-            font-size: 24px;
+            font-size: 20px;
+            text-shadow: 0 0 5px rgba(255, 255, 255, 0.7);
+        }
+        #coin-container {
+            width: 100%;
+            height: 400px;
         }
     </style>
 </head>
 <body>
-    <h1>Hello World Quantum Coinflip</h1>
+    <h1>Quantum Coinflip</h1>
+    <p>Flip a coin on REAL IBM Quantum hardware!</p>
     <button id="flipButton" onclick="flipCoin()">Flip Coin</button>
-    <div id="result"></div>
+    <div id="coin-container"></div>
+    <div id="status"></div>
 
+    <script src="https://cdn.jsdelivr.net/npm/three@0.160.0/build/three.min.js"></script>
     <script>
+        let coin, isSpinning = false;
+
+        function initThreeJS() {
+            console.log('Three.js loaded');
+            const scene = new THREE.Scene();
+            const camera = new THREE.PerspectiveCamera(65, window.innerWidth / 400, 0.1, 1000);
+            const renderer = new THREE.WebGLRenderer({ antialias: true, alpha: true });
+            renderer.setSize(window.innerWidth, 400);
+            document.getElementById('coin-container').appendChild(renderer.domElement);
+
+            const geometry = new THREE.CylinderGeometry(2, 2, 0.2, 32);
+            const textureLoader = new THREE.TextureLoader();
+            const headsTexture = textureLoader.load('/static/heads.png',
+                () => console.log('Heads texture loaded'),
+                undefined,
+                (err) => console.error('Error loading heads texture:', err)
+            );
+            const tailsTexture = textureLoader.load('/static/tails.png',
+                () => console.log('Tails texture loaded'),
+                undefined,
+                (err) => console.error('Error loading tails texture:', err)
+            );
+            const materials = [
+                new THREE.MeshBasicMaterial({ color: 0xaaaaaa }),
+                new THREE.MeshBasicMaterial({ map: headsTexture || { color: 0xff0000 } }),
+                new THREE.MeshBasicMaterial({ map: tailsTexture || { color: 0x0000ff } })
+            ];
+            coin = new THREE.Mesh(geometry, materials);
+            coin.rotation.x = Math.PI / 2; // Start with Heads facing camera
+            coin.rotation.y = Math.PI / 2; 
+            scene.add(coin);
+            camera.position.z = 5;
+            
+
+            const light = new THREE.AmbientLight(0xffffff, 1);
+            scene.add(light);
+
+            function animate() {
+                requestAnimationFrame(animate);
+                if (isSpinning) {
+                    coin.rotation.x += 0.2;
+                }
+                renderer.render(scene, camera);
+            }
+            animate();
+        }
+
         async function flipCoin() {
             const button = document.getElementById('flipButton');
-            const resultDiv = document.getElementById('result');
+            const statusDiv = document.getElementById('status');
             button.disabled = true;
-            resultDiv.textContent = 'Flipping...';
+            statusDiv.textContent = 'Sending to IBM Quantum hardware...';
+            if (typeof THREE !== 'undefined' && coin) {
+                isSpinning = true;
+            }
 
             try {
                 const response = await fetch('/flip', { method: 'POST' });
                 const data = await response.json();
-                resultDiv.textContent = `Result: ${data.result}`;
+                const result = data.result;
+                const backend = data.backend;
+
+                setTimeout(() => {
+                    if (typeof THREE !== 'undefined' && coin) {
+                        isSpinning = false;
+                        // Adjust rotation to show face to camera
+                        coin.rotation.x = result === 'Heads' ? Math.PI / 2 : -Math.PI / 2;
+                    }
+                    statusDiv.textContent = `Result: ${result} (via ${backend})`;
+                    button.disabled = false;
+                }, 2000);
             } catch (error) {
-                resultDiv.textContent = 'Error flipping coin!';
+                if (typeof THREE !== 'undefined' && coin) {
+                    isSpinning = false;
+                }
+                statusDiv.textContent = 'Error: Quantum flip failed!';
                 console.error(error);
-            } finally {
                 button.disabled = false;
             }
+        }
+
+        if (typeof THREE === 'undefined') {
+            console.error('Three.js failed to load');
+            document.getElementById('status').textContent = 'Error: 3D library failed to load';
+        } else {
+            initThreeJS();
         }
     </script>
 </body>
