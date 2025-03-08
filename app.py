@@ -29,13 +29,13 @@ def flip_coin():
     print(f"Using backend: {backend.name}")
     
     # Transpile with optimization
-    transpiled_circuit = transpile(circuit, backend=backend, optimization_level=1)
+    transpiled_circuit = transpile(circuit, backend=backend, optimization_level=2)  # Increased optimization
     
-    # Run with Sampler and a 60-second timeout
+    # Run with Sampler and a reduced timeout (e.g., 25 seconds to fit Render free tier)
     sampler = Sampler(mode=backend)
     job = sampler.run([transpiled_circuit], shots=1)
     try:
-        result = job.result(timeout=60)
+        result = job.result(timeout=25)  # Reduced from 60 to 25 seconds
         counts = result[0].data.c.get_counts()
         outcome = list(counts.keys())[0]  # '0' or '1'
         coin_result = "Tails" if outcome == '0' else "Heads"
