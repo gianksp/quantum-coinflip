@@ -38,11 +38,15 @@ jobs:
           # Create a clean directory for the Lambda package
           mkdir -p lambda_package
           cp backend/lambda_function.py lambda_package/
-          # Install dependencies into the package directory
-          pip install -r backend/requirements.txt -t lambda_package/
-          # Zip the package
           cd lambda_package
+          # Install minimal dependencies
+          pip install amazon-braket-sdk --no-deps -t .
+          pip install boto3 -t .
+          # Zip the package
           zip -r ../lambda.zip .
+          # Check size (for debugging)
+          ls -lh ../lambda.zip
+          du -sh .
           # Upload to S3
           aws s3 cp ../lambda.zip s3://quantum-coinflip-lambda-deploy/lambda.zip
           # Update Lambda function code from S3
