@@ -35,16 +35,15 @@ jobs:
       # Build and Deploy Backend to Lambda via S3
       - name: Build and Deploy Lambda
         run: |
-          # Create a clean directory for the Lambda package
+        # Create a clean directory for the Lambda package
           mkdir -p lambda_package
           cp backend/lambda_function.py lambda_package/
           cd lambda_package
-          # Install minimal dependencies
-          pip install amazon-braket-sdk --no-deps -t .
-          pip install boto3 -t .
+          # Install dependencies from requirements.txt
+          pip install -r ../backend/requirements.txt -t .
           # Zip the package
           zip -r ../lambda.zip .
-          # Check size (for debugging)
+          # Check size for debugging
           ls -lh ../lambda.zip
           du -sh .
           # Upload to S3
