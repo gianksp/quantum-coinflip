@@ -13,33 +13,45 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
+      # Set up Python (match Lambda runtime)
+      - name: Set up Python 3.9
+        uses: actions/setup-python@v4
+        with:
+          python-version: '3.9'
+
       # Configure AWS credentials
       - name: Configure AWS Credentials
         uses: aws-actions/configure-aws-credentials@v2
         with:
           aws-access-key-id: ${{ secrets.AWS_ACCESS_KEY_ID }}
           aws-secret-access-key: ${{ secrets.AWS_SECRET_ACCESS_KEY }}
-          aws-region: us-east-1  # Change to your region
+          aws-region: us-west-2  # Change to your region
 
       # Deploy Frontend to S3
       - name: Deploy Frontend to S3
         run: |
           aws s3 sync ./frontend/ s3://quantum-coinflip-frontend --delete
 
-      # Build and Deploy Backend to Lambda
+      # Build and Deploy Backend to Lambda via S3
       - name: Build and Deploy Lambda
         run: |
-          # Install Python dependencies
-          pip install -r requirements.txt -t ./backend/
-          # Zip the Lambda package
-          cd backend
+          # Create a clean directory for the Lambda package
+          mkdir -p lambda_package
+          cp backend/lambda_function.py lambda_package/
+          # Install dependencies into the package directory
+          pip install -r backend/requirements.txt -t lambda_package/
+          # Zip the package
+          cd lambda_package
           zip -r ../lambda.zip .
-          # Update Lambda function code
+          # Upload to S3
+          aws s3 cp ../lambda.zip s3://quantum-coinflip-lambda-deploy/lambda.zip
+          # Update Lambda function code from S3
           aws lambda update-function-code \
             --function-name quantumCoinflip \
-            --zip-file fileb://../lambda.zip
+            --s3-bucket quantum-coinflip-lambda-deploy \
+            --s3-key lambda.zip
 
-      # Optional: Output the API URL for reference
+      # Output the API URL
       - name: Output API URL
         run: |
           echo "API URL: https://rs87korb72.execute-api.us-east-1.amazonaws.com/prod/flip"
